@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { parseCsv, type ParsedCsv } from "@/lib/csv";
+import { parseCsv, readCsvFileText, type ParsedCsv } from "@/lib/csv";
 import { importExpenses, type ImportRow } from "@/lib/actions/import";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -55,7 +55,7 @@ export function ExpenseCsvImport({
   const [excluded, setExcluded] = useState<Set<number>>(new Set());
 
   async function handleFile(file: File) {
-    const text = await file.text();
+    const text = await readCsvFileText(file);
     const csv = parseCsv(text);
     setParsed(csv);
     setResult(null);
