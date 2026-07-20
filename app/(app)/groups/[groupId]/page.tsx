@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
 import { computeNetBalances, simplifyDebtsByCurrency } from "@/lib/balances";
-import { computeTripStats } from "@/lib/stats";
 import { getDictionary } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +10,6 @@ import { MemberList, type MemberRow } from "@/components/groups/MemberList";
 import { AddMemberForm } from "@/components/groups/AddMemberForm";
 import { ExpenseListItem, type ExpenseRow } from "@/components/expenses/ExpenseListItem";
 import { BalanceSummary } from "@/components/balances/BalanceSummary";
-import { TripStats } from "@/components/stats/TripStats";
 
 export default async function GroupDetailPage({
   params,
@@ -110,7 +108,6 @@ export default async function GroupDetailPage({
 
   const netByCurrency = computeNetBalances(expenseInputs, settlementInputs);
   const transactionsByCurrency = simplifyDebtsByCurrency(netByCurrency);
-  const tripStats = computeTripStats(expenseInputs);
 
   return (
     <div className="space-y-6">
@@ -129,10 +126,12 @@ export default async function GroupDetailPage({
         />
       </Card>
 
-      <Card className="p-4">
-        <h2 className="mb-3 text-sm font-medium text-muted">{t.groups.stats}</h2>
-        <TripStats stats={tripStats} labelById={labelById} t={t.stats} />
-      </Card>
+      <Link
+        href={`/groups/${groupId}/stats`}
+        className="block rounded-xl border border-border bg-white p-4 text-sm font-medium text-primary hover:shadow-md"
+      >
+        {t.stats.viewDetails}
+      </Link>
 
       <Card className="p-4">
         <h2 className="mb-3 text-sm font-medium text-muted">{t.groups.members}</h2>

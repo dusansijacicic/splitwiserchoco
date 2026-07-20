@@ -74,6 +74,8 @@ export const dictionaries = {
       person: "Osoba",
       paid: "Platio/la",
       share: "Njegov/njen deo",
+      viewDetails: "Statistika →",
+      backToGroup: "← Nazad na grupu",
     },
     expenses: {
       paidByLine: (name: string, date: string) => `Platio/la ${name} · ${date}`,
@@ -227,6 +229,8 @@ export const dictionaries = {
       person: "Person",
       paid: "Paid",
       share: "Their share",
+      viewDetails: "Stats →",
+      backToGroup: "← Back to group",
     },
     expenses: {
       paidByLine: (name: string, date: string) => `Paid by ${name} · ${date}`,
