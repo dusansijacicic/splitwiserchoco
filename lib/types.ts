@@ -1,3 +1,11 @@
+// Supabase-js (without generated Database types) can't infer whether an
+// embedded relation is to-one or to-many, so it types it as an array.
+// This normalizes either shape to a single row or null.
+export function unwrapOne<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
 export type Profile = {
   id: string;
   email: string;
