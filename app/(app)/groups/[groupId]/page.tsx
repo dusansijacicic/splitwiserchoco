@@ -82,6 +82,10 @@ export default async function GroupDetailPage({
       expenseDate: e.expense_date,
       paidByLabel: payer?.display_name ?? "?",
       createdBy: e.created_by,
+      shares: (e.expense_participants ?? []).map((p) => ({
+        userId: p.user_id,
+        amount: Number(p.share_amount),
+      })),
     };
   });
 
@@ -152,7 +156,12 @@ export default async function GroupDetailPage({
         ) : (
           <ul className="divide-y divide-border">
             {expenses.map((e) => (
-              <ExpenseListItem key={e.id} expense={e} currentUserId={user!.id} />
+              <ExpenseListItem
+                key={e.id}
+                expense={e}
+                currentUserId={user!.id}
+                labelById={labelById}
+              />
             ))}
           </ul>
         )}

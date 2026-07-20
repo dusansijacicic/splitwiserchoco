@@ -9,36 +9,56 @@ export type ExpenseRow = {
   paidByLabel: string;
   expenseDate: string;
   createdBy: string;
+  shares: { userId: string; amount: number }[];
 };
+
+function isEqualSplit(shares: { amount: number }[]): boolean {
+  if (shares.length <= 1) return true;
+  const [first, ...rest] = shares;
+  return rest.every((s) => Math.abs(s.amount - first.amount) < 0.02);
+}
 
 export function ExpenseListItem({
   expense,
   currentUserId,
+  labelById,
 }: {
   expense: ExpenseRow;
   currentUserId: string;
+  labelById: Record<string, string>;
 }) {
+  const equalSplit = isEqualSplit(expense.shares);
+
   return (
-    <li className="flex items-center justify-between py-2">
-      <div>
-        <p className="text-sm font-medium">{expense.description}</p>
-        <p className="text-xs text-muted">
-          Platio/la {expense.paidByLabel} · {expense.expenseDate}
-        </p>
+    <li className="py-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">{expense.description}</p>
+          <p className="text-xs text-muted">
+            Platio/la {expense.paidByLabel} · {expense.expenseDate}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-sm font-medium">
+            {expense.amount.toFixed(2)} {expense.currency}
+          </p>
+          {expense.createdBy === currentUserId && (
+            <Link
+              href={`/groups/${expense.groupId}/expenses/${expense.id}/edit`}
+              className="text-xs text-primary hover:underline"
+            >
+              Izmeni
+            </Link>
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <p className="text-sm font-medium">
-          {expense.amount.toFixed(2)} {expense.currency}
+      {!equalSplit && (
+        <p className="mt-1 text-xs text-muted">
+          {expense.shares
+            .map((s) => `${labelById[s.userId] ?? "?"}: ${s.amount.toFixed(2)} ${expense.currency}`)
+            .join(" · ")}
         </p>
-        {expense.createdBy === currentUserId && (
-          <Link
-            href={`/groups/${expense.groupId}/expenses/${expense.id}/edit`}
-            className="text-xs text-primary hover:underline"
-          >
-            Izmeni
-          </Link>
-        )}
-      </div>
+      )}
     </li>
   );
 }
