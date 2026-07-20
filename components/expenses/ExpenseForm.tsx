@@ -1,32 +1,53 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { createExpense } from "@/lib/actions/expenses";
+import { createExpense, updateExpense } from "@/lib/actions/expenses";
 import type { ActionState } from "@/lib/actions/groups";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 export type MemberOption = { userId: string; label: string };
 
+export type ExpenseFormDefaults = {
+  description: string;
+  amount: number;
+  currency: string;
+  expenseDate: string;
+  paidBy: string;
+  shares: Record<string, number>;
+};
+
 const initialState: ActionState = { error: null };
 
 export function ExpenseForm({
   groupId,
+  expenseId,
   members,
+  defaults,
 }: {
   groupId: string;
+  expenseId?: string;
   members: MemberOption[];
+  defaults?: ExpenseFormDefaults;
 }) {
-  const [state, formAction, pending] = useActionState(
-    createExpense.bind(null, groupId),
-    initialState
-  );
+  const isEdit = !!expenseId;
+  const action = isEdit
+    ? updateExpense.bind(null, groupId, expenseId!)
+    : createExpense.bind(null, groupId);
+  const [state, formAction, pending] = useActionState(action, initialState);
+
   const [selected, setSelected] = useState<Set<string>>(
-    new Set(members.map((m) => m.userId))
+    new Set(defaults ? Object.keys(defaults.shares) : members.map((m) => m.userId))
   );
-  const [splitMode, setSplitMode] = useState<"equal" | "custom">("equal");
-  const [amount, setAmount] = useState("");
-  const [customShares, setCustomShares] = useState<Record<string, string>>({});
+  const [splitMode, setSplitMode] = useState<"equal" | "custom">(
+    defaults ? "custom" : "equal"
+  );
+  const [amount, setAmount] = useState(defaults ? String(defaults.amount) : "");
+  const [customShares, setCustomShares] = useState<Record<string, string>>(
+    defaults
+      ? Object.fromEntries(Object.entries(defaults.shares).map(([k, v]) => [k, String(v)]))
+      : {}
+  );
 
   function toggle(userId: string) {
     setSelected((prev) => {
@@ -51,7 +72,13 @@ export function ExpenseForm({
     <form action={formAction} className="space-y-4">
       <div>
         <label className="mb-1 block text-sm text-muted">Opis</label>
-        <Input type="text" name="description" required placeholder="npr. Market" />
+        <Input
+          type="text"
+          name="description"
+          required
+          placeholder="npr. Market"
+          defaultValue={defaults?.description}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -69,7 +96,12 @@ export function ExpenseForm({
         </div>
         <div>
           <label className="mb-1 block text-sm text-muted">Valuta</label>
-          <Input type="text" name="currency" defaultValue="EUR" maxLength={8} />
+          <Input
+            type="text"
+            name="currency"
+            defaultValue={defaults?.currency ?? "EUR"}
+            maxLength={8}
+          />
         </div>
       </div>
 
@@ -78,7 +110,7 @@ export function ExpenseForm({
         <Input
           type="date"
           name="expenseDate"
-          defaultValue={new Date().toISOString().slice(0, 10)}
+          defaultValue={defaults?.expenseDate ?? new Date().toISOString().slice(0, 10)}
         />
       </div>
 
@@ -87,6 +119,7 @@ export function ExpenseForm({
         <select
           name="paidBy"
           required
+          defaultValue={defaults?.paidBy}
           className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         >
           {members.map((m) => (
@@ -178,7 +211,7 @@ export function ExpenseForm({
       {state.error && <p className="text-sm text-danger">{state.error}</p>}
 
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Dodavanje..." : "Dodaj trošak"}
+        {pending ? "Čuvanje..." : isEdit ? "Sačuvaj izmene" : "Dodaj trošak"}
       </Button>
     </form>
   );

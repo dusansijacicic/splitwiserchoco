@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
 import { computeNetBalances, simplifyDebtsByCurrency } from "@/lib/balances";
+import { computeTripStats } from "@/lib/stats";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { MemberList, type MemberRow } from "@/components/groups/MemberList";
 import { AddMemberForm } from "@/components/groups/AddMemberForm";
 import { ExpenseListItem, type ExpenseRow } from "@/components/expenses/ExpenseListItem";
 import { BalanceSummary } from "@/components/balances/BalanceSummary";
+import { TripStats } from "@/components/stats/TripStats";
 
 export default async function GroupDetailPage({
   params,
@@ -41,7 +43,7 @@ export default async function GroupDetailPage({
       supabase
         .from("expenses")
         .select(
-          "id, description, amount, currency, expense_date, paid_by, profiles!expenses_paid_by_fkey(display_name), expense_participants(user_id, share_amount)"
+          "id, description, amount, currency, expense_date, paid_by, created_by, profiles!expenses_paid_by_fkey(display_name), expense_participants(user_id, share_amount)"
         )
         .eq("group_id", groupId)
         .order("expense_date", { ascending: false })
@@ -73,17 +75,20 @@ export default async function GroupDetailPage({
     );
     return {
       id: e.id,
+      groupId,
       description: e.description,
       amount: Number(e.amount),
       currency: e.currency,
       expenseDate: e.expense_date,
       paidByLabel: payer?.display_name ?? "?",
+      createdBy: e.created_by,
     };
   });
 
   const expenseInputs = (expenseRows ?? []).map((e) => ({
     paidBy: e.paid_by,
     currency: e.currency,
+    amount: Number(e.amount),
     participants: (e.expense_participants ?? []).map((p) => ({
       userId: p.user_id,
       shareAmount: Number(p.share_amount),
@@ -99,6 +104,7 @@ export default async function GroupDetailPage({
 
   const netByCurrency = computeNetBalances(expenseInputs, settlementInputs);
   const transactionsByCurrency = simplifyDebtsByCurrency(netByCurrency);
+  const tripStats = computeTripStats(expenseInputs);
 
   return (
     <div className="space-y-6">
@@ -114,6 +120,11 @@ export default async function GroupDetailPage({
           labelById={labelById}
           currentUserId={user!.id}
         />
+      </Card>
+
+      <Card className="p-4">
+        <h2 className="mb-3 text-sm font-medium text-muted">Statistika</h2>
+        <TripStats stats={tripStats} labelById={labelById} />
       </Card>
 
       <Card className="p-4">
@@ -141,7 +152,7 @@ export default async function GroupDetailPage({
         ) : (
           <ul className="divide-y divide-border">
             {expenses.map((e) => (
-              <ExpenseListItem key={e.id} expense={e} />
+              <ExpenseListItem key={e.id} expense={e} currentUserId={user!.id} />
             ))}
           </ul>
         )}
