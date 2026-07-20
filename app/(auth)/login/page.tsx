@@ -6,6 +6,7 @@ import { signIn, type AuthActionState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 const initialState: AuthActionState = { error: null };
 
@@ -22,12 +23,7 @@ export default function LoginPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm text-muted">Lozinka</label>
-          <Input
-            type="password"
-            name="password"
-            required
-            autoComplete="current-password"
-          />
+          <PasswordInput name="password" required autoComplete="current-password" />
         </div>
         {state.error && <p className="text-sm text-danger">{state.error}</p>}
         <Button type="submit" className="w-full" disabled={pending}>

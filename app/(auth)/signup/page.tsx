@@ -6,6 +6,7 @@ import { signUp, type AuthActionState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 const initialState: AuthActionState = { error: null };
 
@@ -26,8 +27,7 @@ export default function SignupPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm text-muted">Lozinka</label>
-          <Input
-            type="password"
+          <PasswordInput
             name="password"
             required
             minLength={6}
