@@ -21,11 +21,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" className="text-lg font-semibold text-primary">
             SplitWiser
           </Link>
-          <form action={signOut}>
-            <Button type="submit" variant="secondary">
-              Odjavi se
-            </Button>
-          </form>
+          <div className="flex items-center gap-3">
+            <Link href="/profile" className="text-sm text-muted hover:text-foreground">
+              Profil
+            </Link>
+            <form action={signOut}>
+              <Button type="submit" variant="secondary">
+                Odjavi se
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
