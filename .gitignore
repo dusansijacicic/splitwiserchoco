@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# personal expense data, never commit
+*.csv
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

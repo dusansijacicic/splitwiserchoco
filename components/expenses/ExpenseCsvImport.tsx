@@ -6,6 +6,7 @@ import { parseCsv, readCsvFileText, type ParsedCsv } from "@/lib/csv";
 import { importExpenses, type ImportRow } from "@/lib/actions/import";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 
 export type MemberOption = { userId: string; label: string; email: string };
 
@@ -13,15 +14,13 @@ const NONE = "__none__";
 
 type PreviewRow = {
   index: number;
-  raw: string[];
   description: string;
   amount: number | null;
   paidBy: string | null;
   currency: string;
   expenseDate: string;
-  shares: { userId: string; amount: number }[] | null;
+  defaultShares: Record<string, number>;
   error: string | null;
-  included: boolean;
 };
 
 function resolveMember(value: string, members: MemberOption[]): string | null {
@@ -53,6 +52,8 @@ export function ExpenseCsvImport({
     null
   );
   const [excluded, setExcluded] = useState<Set<number>>(new Set());
+  // rowShares[rowIndex][memberUserId] = editable input value (string)
+  const [rowShares, setRowShares] = useState<Record<number, Record<string, string>>>({});
 
   async function handleFile(file: File) {
     const text = await readCsvFileText(file);
@@ -60,6 +61,7 @@ export function ExpenseCsvImport({
     setParsed(csv);
     setResult(null);
     setExcluded(new Set());
+    setRowShares({});
 
     // best-effort auto-guess based on common header names
     csv.headers.forEach((h, i) => {
@@ -90,39 +92,62 @@ export function ExpenseCsvImport({
       const currency = ci !== null ? (raw[ci] ?? "EUR").trim() || "EUR" : "EUR";
       const expenseDate = dti !== null ? (raw[dti] ?? "").trim() : "";
 
-      let shares: { userId: string; amount: number }[] | null = null;
+      const defaultShares: Record<string, number> = {};
       if (mappedShareCols.length > 0) {
-        shares = mappedShareCols
-          .map(([userId, col]) => ({
-            userId,
-            amount: Number((raw[Number(col)] ?? "0").replace(",", ".")),
-          }))
-          .filter((s) => Number.isFinite(s.amount) && s.amount > 0);
+        for (const [userId, col] of mappedShareCols) {
+          defaultShares[userId] = Number((raw[Number(col)] ?? "0").replace(",", ".")) || 0;
+        }
+      } else if (Number.isFinite(amount) && members.length > 0) {
+        const equalShare = Math.round((amount / members.length) * 100) / 100;
+        for (const m of members) defaultShares[m.userId] = equalShare;
       }
 
       let error: string | null = null;
       if (!description) error = "Nedostaje opis";
       else if (!Number.isFinite(amount) || amount <= 0) error = "Neispravan iznos";
       else if (!paidBy) error = "Ne prepoznajem ko je platio";
-      else if (shares && shares.length > 0) {
-        const sum = shares.reduce((s, x) => s + x.amount, 0);
-        if (Math.abs(sum - amount) > 0.02) error = "Zbir udela ne odgovara ukupnom iznosu";
-      }
 
       return {
         index,
-        raw,
         description,
         amount: Number.isFinite(amount) ? amount : null,
         paidBy,
         currency,
         expenseDate,
-        shares,
+        defaultShares,
         error,
-        included: true,
       };
     });
   }, [parsed, ready, descCol, amountCol, paidByCol, dateCol, currencyCol, perPersonCols, members]);
+
+  // (Re)initialize editable shares whenever the underlying mapping/file changes,
+  // without clobbering edits the user makes afterward. `preview` is a stable
+  // reference between keystrokes (only the useMemo deps above change it), so
+  // comparing identity against the last-seen preview tells us when to reset —
+  // done during render per React's "adjusting state" pattern, not in an effect.
+  const [lastPreview, setLastPreview] = useState<PreviewRow[] | null>(null);
+  if (preview !== lastPreview) {
+    setLastPreview(preview);
+    const next: Record<number, Record<string, string>> = {};
+    for (const row of preview) {
+      next[row.index] = Object.fromEntries(
+        members.map((m) => [m.userId, String(row.defaultShares[m.userId] ?? 0)])
+      );
+    }
+    setRowShares(next);
+  }
+
+  function setShare(rowIndex: number, userId: string, value: string) {
+    setRowShares((prev) => ({
+      ...prev,
+      [rowIndex]: { ...prev[rowIndex], [userId]: value },
+    }));
+  }
+
+  function rowTotal(rowIndex: number): number {
+    const shares = rowShares[rowIndex] ?? {};
+    return Object.values(shares).reduce((sum, v) => sum + (Number(v) || 0), 0);
+  }
 
   function toggleExcluded(index: number) {
     setExcluded((prev) => {
@@ -133,19 +158,33 @@ export function ExpenseCsvImport({
     });
   }
 
+  function rowError(row: PreviewRow): string | null {
+    if (row.error) return row.error;
+    if (row.amount != null && Math.abs(rowTotal(row.index) - row.amount) > 0.02) {
+      return "Zbir udela ne odgovara ukupnom iznosu";
+    }
+    return null;
+  }
+
+  const validCount = preview.filter((r) => !rowError(r) && !excluded.has(r.index)).length;
+
   function handleImport() {
     const rows: ImportRow[] = preview
-      .filter((r) => !r.error && !excluded.has(r.index))
-      .map((r) => ({
-        description: r.description,
-        amount: r.amount!,
-        currency: r.currency,
-        paidBy: r.paidBy!,
-        expenseDate: r.expenseDate || new Date().toISOString().slice(0, 10),
-        mode: r.shares && r.shares.length > 0 ? "exact" : "equal",
-        shares: r.shares ?? undefined,
-        participantIds: r.shares ? undefined : members.map((m) => m.userId),
-      }));
+      .filter((r) => !rowError(r) && !excluded.has(r.index))
+      .map((r) => {
+        const shares = members
+          .map((m) => ({ userId: m.userId, amount: Number(rowShares[r.index]?.[m.userId]) || 0 }))
+          .filter((s) => s.amount > 0);
+        return {
+          description: r.description,
+          amount: r.amount!,
+          currency: r.currency,
+          paidBy: r.paidBy!,
+          expenseDate: r.expenseDate || new Date().toISOString().slice(0, 10),
+          mode: "exact" as const,
+          shares,
+        };
+      });
 
     startTransition(async () => {
       const res = await importExpenses(groupId, rows);
@@ -155,8 +194,6 @@ export function ExpenseCsvImport({
       }
     });
   }
-
-  const validCount = preview.filter((r) => !r.error && !excluded.has(r.index)).length;
 
   return (
     <div className="space-y-4">
@@ -186,7 +223,8 @@ export function ExpenseCsvImport({
 
           <div>
             <p className="mb-1 text-sm font-medium text-muted">
-              Kolone sa tačnim iznosom po osobi (opciono — ako ih ne mapiraš, koristi se ravnomerna podela)
+              Kolone sa tačnim iznosom po osobi (opciono — ako ih ne mapiraš, pregled ispod
+              podrazumeva ravnomernu podelu, ali svaki iznos i dalje možeš ručno izmeniti)
             </p>
             <div className="grid grid-cols-2 gap-3 text-sm">
               {members.map((m) => (
@@ -209,9 +247,10 @@ export function ExpenseCsvImport({
       {ready && preview.length > 0 && (
         <Card className="p-4">
           <p className="mb-2 text-sm font-medium text-muted">
-            Pregled ({validCount} od {preview.length} redova spremno za uvoz)
+            Pregled ({validCount} od {preview.length} redova spremno za uvoz) — iznos po osobi
+            možeš ručno izmeniti u tabeli ispod
           </p>
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-96 overflow-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="text-xs text-muted">
@@ -219,34 +258,50 @@ export function ExpenseCsvImport({
                   <th className="py-1 pr-2">Opis</th>
                   <th className="py-1 pr-2">Iznos</th>
                   <th className="py-1 pr-2">Platio</th>
-                  <th className="py-1 pr-2">Podela</th>
+                  {members.map((m) => (
+                    <th key={m.userId} className="py-1 pr-2">
+                      {m.label}
+                    </th>
+                  ))}
                   <th className="py-1 pr-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {preview.map((r) => (
-                  <tr key={r.index} className="border-t border-border">
-                    <td className="py-1 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={!excluded.has(r.index)}
-                        disabled={!!r.error}
-                        onChange={() => toggleExcluded(r.index)}
-                      />
-                    </td>
-                    <td className="py-1 pr-2">{r.description || "—"}</td>
-                    <td className="py-1 pr-2">
-                      {r.amount != null ? `${r.amount.toFixed(2)} ${r.currency}` : "—"}
-                    </td>
-                    <td className="py-1 pr-2">
-                      {members.find((m) => m.userId === r.paidBy)?.label ?? "—"}
-                    </td>
-                    <td className="py-1 pr-2">
-                      {r.shares && r.shares.length > 0 ? "tačno po osobi" : "ravnomerno"}
-                    </td>
-                    <td className="py-1 pr-2 text-danger">{r.error}</td>
-                  </tr>
-                ))}
+                {preview.map((r) => {
+                  const err = rowError(r);
+                  return (
+                    <tr key={r.index} className="border-t border-border align-top">
+                      <td className="py-1 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={!excluded.has(r.index)}
+                          disabled={!!r.error}
+                          onChange={() => toggleExcluded(r.index)}
+                        />
+                      </td>
+                      <td className="py-1 pr-2 whitespace-nowrap">{r.description || "—"}</td>
+                      <td className="py-1 pr-2 whitespace-nowrap">
+                        {r.amount != null ? `${r.amount.toFixed(2)} ${r.currency}` : "—"}
+                      </td>
+                      <td className="py-1 pr-2 whitespace-nowrap">
+                        {members.find((m) => m.userId === r.paidBy)?.label ?? "—"}
+                      </td>
+                      {members.map((m) => (
+                        <td key={m.userId} className="py-1 pr-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="w-24"
+                            value={rowShares[r.index]?.[m.userId] ?? "0"}
+                            onChange={(e) => setShare(r.index, m.userId, e.target.value)}
+                          />
+                        </td>
+                      ))}
+                      <td className="py-1 pr-2 text-danger whitespace-nowrap">{err}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
