@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/server";
 
 export type ImportRow = {
   description: string;
@@ -21,6 +22,7 @@ export async function importExpenses(
   rows: ImportRow[]
 ): Promise<ImportResult> {
   const supabase = await createClient();
+  const { t } = await getDictionary();
   let successCount = 0;
   const errors: string[] = [];
 
@@ -50,7 +52,7 @@ export async function importExpenses(
           });
 
     if (error) {
-      errors.push(`Red ${index + 1} (${row.description}): ${error.message}`);
+      errors.push(`${t.csvImport.rowLabel} ${index + 1} (${row.description}): ${error.message}`);
     } else {
       successCount++;
     }

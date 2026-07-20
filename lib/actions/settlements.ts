@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/server";
 import type { ActionState } from "@/lib/actions/groups";
 
 export async function createSettlement(
@@ -13,11 +14,12 @@ export async function createSettlement(
   const paidTo = String(formData.get("paidTo") ?? "");
   const amount = Number(formData.get("amount"));
   const currency = String(formData.get("currency") ?? "EUR").trim() || "EUR";
+  const { t } = await getDictionary();
 
-  if (!paidBy || !paidTo) return { error: "Izaberi ko plaća i ko prima." };
-  if (paidBy === paidTo) return { error: "Osoba ne može da plati sama sebi." };
+  if (!paidBy || !paidTo) return { error: t.settleUp.errorPickBoth };
+  if (paidBy === paidTo) return { error: t.settleUp.errorSamePerson };
   if (!Number.isFinite(amount) || amount <= 0) {
-    return { error: "Iznos mora biti veći od 0." };
+    return { error: t.settleUp.errorAmountPositive };
   }
 
   const supabase = await createClient();

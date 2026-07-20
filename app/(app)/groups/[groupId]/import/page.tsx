@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
+import { getDictionary } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { ExpenseCsvImport, type MemberOption } from "@/components/expenses/ExpenseCsvImport";
 
@@ -11,6 +12,7 @@ export default async function ImportExpensesPage({
 }) {
   const { groupId } = await params;
   const supabase = await createClient();
+  const { t } = await getDictionary();
 
   const { data: group } = await supabase
     .from("groups")
@@ -39,11 +41,9 @@ export default async function ImportExpensesPage({
 
   return (
     <Card className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-1 text-lg font-semibold">Uvoz troškova iz CSV-a</h1>
-      <p className="mb-4 text-sm text-muted">
-        Grupa: {group.name}. Otpremi CSV izvezen iz Excel-a/Google Sheets-a i mapiraj kolone.
-      </p>
-      <ExpenseCsvImport groupId={groupId} members={members} />
+      <h1 className="mb-1 text-lg font-semibold">{t.csvImport.title}</h1>
+      <p className="mb-4 text-sm text-muted">{t.csvImport.subtitle(group.name)}</p>
+      <ExpenseCsvImport groupId={groupId} members={members} t={t.csvImport} />
     </Card>
   );
 }

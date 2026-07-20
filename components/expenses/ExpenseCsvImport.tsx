@@ -7,6 +7,7 @@ import { importExpenses, type ImportRow } from "@/lib/actions/import";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type MemberOption = { userId: string; label: string; email: string };
 
@@ -35,9 +36,11 @@ function resolveMember(value: string, members: MemberOption[]): string | null {
 export function ExpenseCsvImport({
   groupId,
   members,
+  t,
 }: {
   groupId: string;
   members: MemberOption[];
+  t: Dictionary["csvImport"];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -103,9 +106,9 @@ export function ExpenseCsvImport({
       }
 
       let error: string | null = null;
-      if (!description) error = "Nedostaje opis";
-      else if (!Number.isFinite(amount) || amount <= 0) error = "Neispravan iznos";
-      else if (!paidBy) error = "Ne prepoznajem ko je platio";
+      if (!description) error = t.errorMissingDescription;
+      else if (!Number.isFinite(amount) || amount <= 0) error = t.errorInvalidAmount;
+      else if (!paidBy) error = t.errorUnrecognizedPayer;
 
       return {
         index,
@@ -118,7 +121,7 @@ export function ExpenseCsvImport({
         error,
       };
     });
-  }, [parsed, ready, descCol, amountCol, paidByCol, dateCol, currencyCol, perPersonCols, members]);
+  }, [parsed, ready, descCol, amountCol, paidByCol, dateCol, currencyCol, perPersonCols, members, t]);
 
   // (Re)initialize editable shares whenever the underlying mapping/file changes,
   // without clobbering edits the user makes afterward. `preview` is a stable
@@ -161,7 +164,7 @@ export function ExpenseCsvImport({
   function rowError(row: PreviewRow): string | null {
     if (row.error) return row.error;
     if (row.amount != null && Math.abs(rowTotal(row.index) - row.amount) > 0.02) {
-      return "Zbir udela ne odgovara ukupnom iznosu";
+      return t.errorSumMismatch;
     }
     return null;
   }
@@ -198,7 +201,7 @@ export function ExpenseCsvImport({
   return (
     <div className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm text-muted">CSV fajl</label>
+        <label className="mb-1 block text-sm text-muted">{t.file}</label>
         <input
           type="file"
           accept=".csv,text/csv"
@@ -212,20 +215,17 @@ export function ExpenseCsvImport({
 
       {parsed && (
         <Card className="space-y-3 p-4">
-          <p className="text-sm font-medium text-muted">Mapiranje kolona</p>
+          <p className="text-sm font-medium text-muted">{t.columnMapping}</p>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <ColumnSelect label="Opis" headers={parsed.headers} value={descCol} onChange={setDescCol} />
-            <ColumnSelect label="Ukupan iznos" headers={parsed.headers} value={amountCol} onChange={setAmountCol} />
-            <ColumnSelect label="Ko je platio" headers={parsed.headers} value={paidByCol} onChange={setPaidByCol} />
-            <ColumnSelect label="Datum (opciono)" headers={parsed.headers} value={dateCol} onChange={setDateCol} optional />
-            <ColumnSelect label="Valuta (opciono)" headers={parsed.headers} value={currencyCol} onChange={setCurrencyCol} optional />
+            <ColumnSelect label={t.description} headers={parsed.headers} value={descCol} onChange={setDescCol} none={t.none} pick={t.pickColumn} />
+            <ColumnSelect label={t.totalAmount} headers={parsed.headers} value={amountCol} onChange={setAmountCol} none={t.none} pick={t.pickColumn} />
+            <ColumnSelect label={t.paidBy} headers={parsed.headers} value={paidByCol} onChange={setPaidByCol} none={t.none} pick={t.pickColumn} />
+            <ColumnSelect label={t.dateOptional} headers={parsed.headers} value={dateCol} onChange={setDateCol} none={t.none} pick={t.pickColumn} optional />
+            <ColumnSelect label={t.currencyOptional} headers={parsed.headers} value={currencyCol} onChange={setCurrencyCol} none={t.none} pick={t.pickColumn} optional />
           </div>
 
           <div>
-            <p className="mb-1 text-sm font-medium text-muted">
-              Kolone sa tačnim iznosom po osobi (opciono — ako ih ne mapiraš, pregled ispod
-              podrazumeva ravnomernu podelu, ali svaki iznos i dalje možeš ručno izmeniti)
-            </p>
+            <p className="mb-1 text-sm font-medium text-muted">{t.perPersonHint}</p>
             <div className="grid grid-cols-2 gap-3 text-sm">
               {members.map((m) => (
                 <ColumnSelect
@@ -236,6 +236,8 @@ export function ExpenseCsvImport({
                   onChange={(v) =>
                     setPerPersonCols((prev) => ({ ...prev, [m.userId]: v }))
                   }
+                  none={t.none}
+                  pick={t.pickColumn}
                   optional
                 />
               ))}
@@ -247,17 +249,16 @@ export function ExpenseCsvImport({
       {ready && preview.length > 0 && (
         <Card className="p-4">
           <p className="mb-2 text-sm font-medium text-muted">
-            Pregled ({validCount} od {preview.length} redova spremno za uvoz) — iznos po osobi
-            možeš ručno izmeniti u tabeli ispod
+            {t.previewSummary(validCount, preview.length)}
           </p>
           <div className="max-h-96 overflow-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="text-xs text-muted">
                   <th className="py-1 pr-2"></th>
-                  <th className="py-1 pr-2">Opis</th>
-                  <th className="py-1 pr-2">Iznos</th>
-                  <th className="py-1 pr-2">Platio</th>
+                  <th className="py-1 pr-2">{t.colDescription}</th>
+                  <th className="py-1 pr-2">{t.colAmount}</th>
+                  <th className="py-1 pr-2">{t.colPaidBy}</th>
                   {members.map((m) => (
                     <th key={m.userId} className="py-1 pr-2">
                       {m.label}
@@ -308,11 +309,11 @@ export function ExpenseCsvImport({
 
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={handleImport} disabled={pending || validCount === 0}>
-              {pending ? "Uvoženje..." : `Uvezi ${validCount} troškova`}
+              {pending ? t.importing : t.importButton(validCount)}
             </Button>
             {result && result.errors.length > 0 && (
               <span className="text-sm text-danger">
-                {result.successCount} uspešno, {result.errors.length} sa greškom
+                {t.resultSummary(result.successCount, result.errors.length)}
               </span>
             )}
           </div>
@@ -333,12 +334,16 @@ function ColumnSelect({
   value,
   onChange,
   optional,
+  none,
+  pick,
 }: {
   label: string;
   headers: string[];
   value: string;
   onChange: (v: string) => void;
   optional?: boolean;
+  none: string;
+  pick: string;
 }) {
   return (
     <div>
@@ -348,8 +353,8 @@ function ColumnSelect({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-border px-2 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
       >
-        {optional && <option value={NONE}>—</option>}
-        {!optional && <option value={NONE}>Izaberi kolonu</option>}
+        {optional && <option value={NONE}>{none}</option>}
+        {!optional && <option value={NONE}>{pick}</option>}
         {headers.map((h, i) => (
           <option key={i} value={String(i)}>
             {h}

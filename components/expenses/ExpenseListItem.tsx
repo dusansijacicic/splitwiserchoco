@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type ExpenseRow = {
   id: string;
@@ -22,10 +23,12 @@ export function ExpenseListItem({
   expense,
   currentUserId,
   labelById,
+  t,
 }: {
   expense: ExpenseRow;
   currentUserId: string;
   labelById: Record<string, string>;
+  t: Dictionary["expenses"];
 }) {
   const equalSplit = isEqualSplit(expense.shares);
 
@@ -35,7 +38,7 @@ export function ExpenseListItem({
         <div>
           <p className="text-sm font-medium">{expense.description}</p>
           <p className="text-xs text-muted">
-            Platio/la {expense.paidByLabel} · {expense.expenseDate}
+            {t.paidByLine(expense.paidByLabel, expense.expenseDate)}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -47,7 +50,7 @@ export function ExpenseListItem({
               href={`/groups/${expense.groupId}/expenses/${expense.id}/edit`}
               className="text-xs text-primary hover:underline"
             >
-              Izmeni
+              {t.edit}
             </Link>
           )}
         </div>

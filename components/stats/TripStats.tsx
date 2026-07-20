@@ -1,16 +1,19 @@
 import type { TripStatsByCurrency } from "@/lib/stats";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function TripStats({
   stats,
   labelById,
+  t,
 }: {
   stats: TripStatsByCurrency;
   labelById: Record<string, string>;
+  t: Dictionary["stats"];
 }) {
   const currencies = Object.keys(stats);
 
   if (currencies.length === 0) {
-    return <p className="text-sm text-muted">Još nema troškova za statistiku.</p>;
+    return <p className="text-sm text-muted">{t.empty}</p>;
   }
 
   return (
@@ -22,15 +25,15 @@ export function TripStats({
             <div className="mb-2 flex items-baseline justify-between">
               <p className="text-xs font-medium uppercase text-muted">{currency}</p>
               <p className="text-sm font-medium">
-                Ukupno: {bucket.total.toFixed(2)} {currency}
+                {t.total} {bucket.total.toFixed(2)} {currency}
               </p>
             </div>
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="text-xs text-muted">
-                  <th className="py-1 pr-2">Osoba</th>
-                  <th className="py-1 pr-2">Platio/la</th>
-                  <th className="py-1 pr-2">Njegov/njen deo</th>
+                  <th className="py-1 pr-2">{t.person}</th>
+                  <th className="py-1 pr-2">{t.paid}</th>
+                  <th className="py-1 pr-2">{t.share}</th>
                 </tr>
               </thead>
               <tbody>

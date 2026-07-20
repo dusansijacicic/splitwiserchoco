@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/server";
 
 export type ActionState = { error: string | null };
 
@@ -12,7 +13,8 @@ export async function createGroup(
 ): Promise<ActionState> {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) {
-    return { error: "Ime grupe je obavezno." };
+    const { t } = await getDictionary();
+    return { error: t.groups.errorGroupNameRequired };
   }
 
   const supabase = await createClient();
@@ -34,7 +36,8 @@ export async function addMember(
 ): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!email) {
-    return { error: "Email je obavezan." };
+    const { t } = await getDictionary();
+    return { error: t.groups.errorEmailRequired };
   }
 
   const supabase = await createClient();

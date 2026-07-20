@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
 import { computeNetBalances, simplifyDebtsByCurrency } from "@/lib/balances";
 import { computeTripStats } from "@/lib/stats";
+import { getDictionary } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { MemberList, type MemberRow } from "@/components/groups/MemberList";
@@ -23,6 +24,7 @@ export default async function GroupDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { t } = await getDictionary();
 
   const { data: group } = await supabase
     .from("groups")
@@ -58,7 +60,7 @@ export default async function GroupDetailPage({
     const profile = unwrapOne(m.profiles as Profile | Profile[] | null);
     return {
       id: m.id,
-      label: profile?.display_name ?? m.invited_email ?? "Nepoznat",
+      label: profile?.display_name ?? m.invited_email ?? "?",
       pending: profile === null,
     };
   });
@@ -117,42 +119,43 @@ export default async function GroupDetailPage({
       </div>
 
       <Card className="p-4">
-        <h2 className="mb-3 text-sm font-medium text-muted">Balans</h2>
+        <h2 className="mb-3 text-sm font-medium text-muted">{t.groups.balance}</h2>
         <BalanceSummary
           groupId={groupId}
           transactionsByCurrency={transactionsByCurrency}
           labelById={labelById}
           currentUserId={user!.id}
+          t={t.balance}
         />
       </Card>
 
       <Card className="p-4">
-        <h2 className="mb-3 text-sm font-medium text-muted">Statistika</h2>
-        <TripStats stats={tripStats} labelById={labelById} />
+        <h2 className="mb-3 text-sm font-medium text-muted">{t.groups.stats}</h2>
+        <TripStats stats={tripStats} labelById={labelById} t={t.stats} />
       </Card>
 
       <Card className="p-4">
-        <h2 className="mb-3 text-sm font-medium text-muted">Članovi</h2>
-        <MemberList members={members} />
+        <h2 className="mb-3 text-sm font-medium text-muted">{t.groups.members}</h2>
+        <MemberList members={members} pendingLabel={t.groups.pendingInvite} />
         <div className="mt-4 border-t border-border pt-4">
-          <AddMemberForm groupId={groupId} />
+          <AddMemberForm groupId={groupId} t={t.groups} />
         </div>
       </Card>
 
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted">Troškovi</h2>
+          <h2 className="text-sm font-medium text-muted">{t.groups.expenses}</h2>
           <div className="flex gap-2">
             <Link href={`/groups/${groupId}/import`}>
-              <Button variant="secondary">Uvezi CSV</Button>
+              <Button variant="secondary">{t.groups.importCsv}</Button>
             </Link>
             <Link href={`/groups/${groupId}/expenses/new`}>
-              <Button variant="secondary">+ Dodaj trošak</Button>
+              <Button variant="secondary">{t.groups.addExpense}</Button>
             </Link>
           </div>
         </div>
         {expenses.length === 0 ? (
-          <p className="text-sm text-muted">Još nema troškova u ovoj grupi.</p>
+          <p className="text-sm text-muted">{t.groups.noExpenses}</p>
         ) : (
           <ul className="divide-y divide-border">
             {expenses.map((e) => (
@@ -161,6 +164,7 @@ export default async function GroupDetailPage({
                 expense={e}
                 currentUserId={user!.id}
                 labelById={labelById}
+                t={t.expenses}
               />
             ))}
           </ul>

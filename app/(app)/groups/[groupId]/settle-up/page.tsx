@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
+import { getDictionary } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { SettleUpForm } from "@/components/balances/SettleUpForm";
 
@@ -14,6 +15,7 @@ export default async function SettleUpPage({
   const { groupId } = await params;
   const query = await searchParams;
   const supabase = await createClient();
+  const { t } = await getDictionary();
 
   const { data: group } = await supabase
     .from("groups")
@@ -40,7 +42,7 @@ export default async function SettleUpPage({
 
   return (
     <Card className="mx-auto max-w-md p-6">
-      <h1 className="mb-4 text-lg font-semibold">Poravnaj dug u grupi {group.name}</h1>
+      <h1 className="mb-4 text-lg font-semibold">{t.settleUp.title(group.name)}</h1>
       <SettleUpForm
         groupId={groupId}
         members={members}
@@ -48,6 +50,7 @@ export default async function SettleUpPage({
         defaultTo={query.to}
         defaultAmount={query.amount}
         defaultCurrency={query.currency}
+        t={t.settleUp}
       />
     </Card>
   );

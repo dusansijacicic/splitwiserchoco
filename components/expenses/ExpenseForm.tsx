@@ -5,6 +5,7 @@ import { createExpense, updateExpense } from "@/lib/actions/expenses";
 import type { ActionState } from "@/lib/actions/groups";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type MemberOption = { userId: string; label: string };
 
@@ -24,11 +25,13 @@ export function ExpenseForm({
   expenseId,
   members,
   defaults,
+  t,
 }: {
   groupId: string;
   expenseId?: string;
   members: MemberOption[];
   defaults?: ExpenseFormDefaults;
+  t: Dictionary["expenses"];
 }) {
   const isEdit = !!expenseId;
   const action = isEdit
@@ -71,19 +74,19 @@ export function ExpenseForm({
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm text-muted">Opis</label>
+        <label className="mb-1 block text-sm text-muted">{t.description}</label>
         <Input
           type="text"
           name="description"
           required
-          placeholder="npr. Market"
+          placeholder={t.descriptionPlaceholder}
           defaultValue={defaults?.description}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm text-muted">Iznos</label>
+          <label className="mb-1 block text-sm text-muted">{t.amount}</label>
           <Input
             type="number"
             name="amount"
@@ -95,7 +98,7 @@ export function ExpenseForm({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm text-muted">Valuta</label>
+          <label className="mb-1 block text-sm text-muted">{t.currency}</label>
           <Input
             type="text"
             name="currency"
@@ -106,7 +109,7 @@ export function ExpenseForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm text-muted">Datum</label>
+        <label className="mb-1 block text-sm text-muted">{t.date}</label>
         <Input
           type="date"
           name="expenseDate"
@@ -115,7 +118,7 @@ export function ExpenseForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm text-muted">Ko je platio</label>
+        <label className="mb-1 block text-sm text-muted">{t.paidBy}</label>
         <select
           name="paidBy"
           required
@@ -131,7 +134,7 @@ export function ExpenseForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm text-muted">Podeli između</label>
+        <label className="mb-1 block text-sm text-muted">{t.splitBetween}</label>
         <div className="space-y-1">
           {members.map((m) => (
             <label key={m.userId} className="flex items-center gap-2 text-sm">
@@ -149,7 +152,7 @@ export function ExpenseForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm text-muted">Način podele</label>
+        <label className="mb-1 block text-sm text-muted">{t.splitMode}</label>
         <div className="flex gap-4 text-sm">
           <label className="flex items-center gap-1.5">
             <input
@@ -159,7 +162,7 @@ export function ExpenseForm({
               checked={splitMode === "equal"}
               onChange={() => setSplitMode("equal")}
             />
-            Ravnomerno
+            {t.equal}
           </label>
           <label className="flex items-center gap-1.5">
             <input
@@ -169,7 +172,7 @@ export function ExpenseForm({
               checked={splitMode === "custom"}
               onChange={() => setSplitMode("custom")}
             />
-            Prilagođeno
+            {t.custom}
           </label>
         </div>
       </div>
@@ -177,7 +180,7 @@ export function ExpenseForm({
       {splitMode === "custom" && (
         <div className="space-y-2 rounded-lg border border-border p-3">
           {selectedMembers.length === 0 ? (
-            <p className="text-sm text-muted">Izaberi bar jednog učesnika iznad.</p>
+            <p className="text-sm text-muted">{t.pickAtLeastOne}</p>
           ) : (
             selectedMembers.map((m) => (
               <div key={m.userId} className="flex items-center justify-between gap-2">
@@ -201,8 +204,8 @@ export function ExpenseForm({
               className={`text-xs ${Math.abs(customDiff) < 0.005 ? "text-owed" : "text-danger"}`}
             >
               {Math.abs(customDiff) < 0.005
-                ? "Zbir se poklapa sa ukupnim iznosom."
-                : `Razlika: ${customDiff.toFixed(2)} (uneto ${customTotal.toFixed(2)} od ${amountNum.toFixed(2)})`}
+                ? t.sumMatches
+                : t.sumDiff(customDiff.toFixed(2), customTotal.toFixed(2), amountNum.toFixed(2))}
             </p>
           )}
         </div>
@@ -211,7 +214,7 @@ export function ExpenseForm({
       {state.error && <p className="text-sm text-danger">{state.error}</p>}
 
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Čuvanje..." : isEdit ? "Sačuvaj izmene" : "Dodaj trošak"}
+        {pending ? t.saving : isEdit ? t.saveChanges : t.add}
       </Button>
     </form>
   );

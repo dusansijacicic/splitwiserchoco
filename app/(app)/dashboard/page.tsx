@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne } from "@/lib/types";
+import { getDictionary } from "@/lib/i18n/server";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { Button } from "@/components/ui/Button";
 
@@ -9,6 +10,7 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { t } = await getDictionary();
 
   const { data: memberships } = await supabase
     .from("group_members")
@@ -40,16 +42,14 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Tvoje grupe</h1>
+        <h1 className="text-xl font-semibold">{t.dashboard.title}</h1>
         <Link href="/groups/new">
-          <Button>+ Nova grupa</Button>
+          <Button>{t.dashboard.newGroup}</Button>
         </Link>
       </div>
 
       {groups.length === 0 ? (
-        <p className="text-muted">
-          Još nemaš nijednu grupu. Kreiraj prvu da počneš da deliš troškove.
-        </p>
+        <p className="text-muted">{t.dashboard.empty}</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {groups.map((g) => (
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
               key={g.id}
               id={g.id}
               name={g.name}
-              memberCount={memberCountByGroup[g.id] ?? 1}
+              memberCountLabel={t.dashboard.memberCount(memberCountByGroup[g.id] ?? 1)}
             />
           ))}
         </div>

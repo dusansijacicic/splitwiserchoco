@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
+import { getDictionary } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { ExpenseForm, type MemberOption } from "@/components/expenses/ExpenseForm";
 
@@ -11,6 +12,7 @@ export default async function EditExpensePage({
 }) {
   const { groupId, expenseId } = await params;
   const supabase = await createClient();
+  const { t } = await getDictionary();
 
   const {
     data: { user },
@@ -47,10 +49,8 @@ export default async function EditExpensePage({
   if (expense.created_by !== user!.id) {
     return (
       <Card className="mx-auto max-w-md p-6">
-        <h1 className="mb-2 text-lg font-semibold">Nemaš dozvolu</h1>
-        <p className="text-sm text-muted">
-          Samo osoba koja je dodala ovaj trošak može da ga izmeni.
-        </p>
+        <h1 className="mb-2 text-lg font-semibold">{t.expenses.noPermissionTitle}</h1>
+        <p className="text-sm text-muted">{t.expenses.noPermissionBody}</p>
       </Card>
     );
   }
@@ -62,11 +62,12 @@ export default async function EditExpensePage({
 
   return (
     <Card className="mx-auto max-w-md p-6">
-      <h1 className="mb-4 text-lg font-semibold">Izmeni trošak u grupi {group.name}</h1>
+      <h1 className="mb-4 text-lg font-semibold">{t.expenses.editInGroup(group.name)}</h1>
       <ExpenseForm
         groupId={groupId}
         expenseId={expenseId}
         members={members}
+        t={t.expenses}
         defaults={{
           description: expense.description,
           amount: Number(expense.amount),

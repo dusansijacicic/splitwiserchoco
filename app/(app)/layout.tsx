@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
+import { getDictionary } from "@/lib/i18n/server";
 import { Button } from "@/components/ui/Button";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -14,6 +16,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login");
   }
 
+  const { locale, t } = await getDictionary();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-white">
@@ -21,13 +25,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" className="text-lg font-semibold text-primary">
             SplitWiser
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher locale={locale} labels={t.lang} />
             <Link href="/profile" className="text-sm text-muted hover:text-foreground">
-              Profil
+              {t.nav.profile}
             </Link>
             <form action={signOut}>
               <Button type="submit" variant="secondary">
-                Odjavi se
+                {t.nav.logout}
               </Button>
             </form>
           </div>

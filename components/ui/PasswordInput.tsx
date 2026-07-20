@@ -2,10 +2,15 @@
 
 import { InputHTMLAttributes, forwardRef, useState } from "react";
 
-export const PasswordInput = forwardRef<
-  HTMLInputElement,
-  Omit<InputHTMLAttributes<HTMLInputElement>, "type">
->(function PasswordInput({ className = "", ...props }, ref) {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+  showLabel?: string;
+  hideLabel?: string;
+};
+
+export const PasswordInput = forwardRef<HTMLInputElement, Props>(function PasswordInput(
+  { className = "", showLabel = "Prikaži", hideLabel = "Sakrij", ...props },
+  ref
+) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -22,7 +27,7 @@ export const PasswordInput = forwardRef<
         tabIndex={-1}
         className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted hover:text-foreground"
       >
-        {visible ? "Sakrij" : "Prikaži"}
+        {visible ? hideLabel : showLabel}
       </button>
     </div>
   );
