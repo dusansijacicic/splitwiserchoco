@@ -79,9 +79,14 @@ export default async function GroupDetailPage({
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium text-muted">Troškovi</h2>
-          <Link href={`/groups/${groupId}/expenses/new`}>
-            <Button variant="secondary">+ Dodaj trošak</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/groups/${groupId}/import`}>
+              <Button variant="secondary">Uvezi CSV</Button>
+            </Link>
+            <Link href={`/groups/${groupId}/expenses/new`}>
+              <Button variant="secondary">+ Dodaj trošak</Button>
+            </Link>
+          </div>
         </div>
         {expenses.length === 0 ? (
           <p className="text-sm text-muted">Još nema troškova u ovoj grupi.</p>
