@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
-import { getDictionary } from "@/lib/i18n/server";
+import { getDictionary, omitFns } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { ExpenseForm, type MemberOption } from "@/components/expenses/ExpenseForm";
 
@@ -37,10 +37,17 @@ export default async function NewExpensePage({
     })
     .filter((m): m is MemberOption => m !== null);
 
+  const formLabels = omitFns(t.expenses, [
+    "paidByLine",
+    "newInGroup",
+    "editInGroup",
+    "errorShareSumMismatch",
+  ]);
+
   return (
     <Card className="mx-auto max-w-md p-6">
       <h1 className="mb-4 text-lg font-semibold">{t.expenses.newInGroup(group.name)}</h1>
-      <ExpenseForm groupId={groupId} members={members} t={t.expenses} />
+      <ExpenseForm groupId={groupId} members={members} t={formLabels} />
     </Card>
   );
 }

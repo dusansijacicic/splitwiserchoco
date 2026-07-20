@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
-import { getDictionary } from "@/lib/i18n/server";
+import { getDictionary, omitFns } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { ExpenseForm, type MemberOption } from "@/components/expenses/ExpenseForm";
 
@@ -60,6 +60,13 @@ export default async function EditExpensePage({
     shares[p.user_id] = Number(p.share_amount);
   }
 
+  const formLabels = omitFns(t.expenses, [
+    "paidByLine",
+    "newInGroup",
+    "editInGroup",
+    "errorShareSumMismatch",
+  ]);
+
   return (
     <Card className="mx-auto max-w-md p-6">
       <h1 className="mb-4 text-lg font-semibold">{t.expenses.editInGroup(group.name)}</h1>
@@ -67,7 +74,7 @@ export default async function EditExpensePage({
         groupId={groupId}
         expenseId={expenseId}
         members={members}
-        t={t.expenses}
+        t={formLabels}
         defaults={{
           description: expense.description,
           amount: Number(expense.amount),

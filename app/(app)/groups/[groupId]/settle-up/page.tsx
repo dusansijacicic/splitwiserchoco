@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
-import { getDictionary } from "@/lib/i18n/server";
+import { getDictionary, omitFns } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { SettleUpForm } from "@/components/balances/SettleUpForm";
 
@@ -40,6 +40,8 @@ export default async function SettleUpPage({
     })
     .filter((m): m is { userId: string; label: string } => m !== null);
 
+  const settleUpLabels = omitFns(t.settleUp, ["title"]);
+
   return (
     <Card className="mx-auto max-w-md p-6">
       <h1 className="mb-4 text-lg font-semibold">{t.settleUp.title(group.name)}</h1>
@@ -50,7 +52,7 @@ export default async function SettleUpPage({
         defaultTo={query.to}
         defaultAmount={query.amount}
         defaultCurrency={query.currency}
-        t={t.settleUp}
+        t={settleUpLabels}
       />
     </Card>
   );

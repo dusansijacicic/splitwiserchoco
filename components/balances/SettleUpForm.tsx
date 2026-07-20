@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
+// Excludes the server-only interpolation function (title) — Client
+// Components can't receive functions as props from Server Components.
+export type SettleUpLabels = Omit<Dictionary["settleUp"], "title">;
+
 const initialState: ActionState = { error: null };
 
 export function SettleUpForm({
@@ -24,7 +28,7 @@ export function SettleUpForm({
   defaultTo?: string;
   defaultAmount?: string;
   defaultCurrency?: string;
-  t: Dictionary["settleUp"];
+  t: SettleUpLabels;
 }) {
   const [state, formAction, pending] = useActionState(
     createSettlement.bind(null, groupId),

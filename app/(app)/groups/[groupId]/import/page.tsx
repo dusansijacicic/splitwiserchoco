@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapOne, type Profile } from "@/lib/types";
-import { getDictionary } from "@/lib/i18n/server";
+import { getDictionary, omitFns } from "@/lib/i18n/server";
 import { Card } from "@/components/ui/Card";
 import { ExpenseCsvImport, type MemberOption } from "@/components/expenses/ExpenseCsvImport";
 
@@ -39,11 +39,13 @@ export default async function ImportExpensesPage({
     })
     .filter((m): m is MemberOption => m !== null);
 
+  const csvLabels = omitFns(t.csvImport, ["subtitle"]);
+
   return (
     <Card className="mx-auto max-w-2xl p-6">
       <h1 className="mb-1 text-lg font-semibold">{t.csvImport.title}</h1>
       <p className="mb-4 text-sm text-muted">{t.csvImport.subtitle(group.name)}</p>
-      <ExpenseCsvImport groupId={groupId} members={members} t={t.csvImport} />
+      <ExpenseCsvImport groupId={groupId} members={members} t={csvLabels} />
     </Card>
   );
 }

@@ -18,6 +18,15 @@ export type ExpenseFormDefaults = {
   shares: Record<string, number>;
 };
 
+// Server Components can't hand functions to Client Components (RSC props
+// must be serializable), so this excludes the interpolation-function
+// entries from Dictionary["expenses"] (paidByLine/newInGroup/editInGroup/
+// errorShareSumMismatch) — those stay server-only, used elsewhere.
+export type ExpenseFormLabels = Omit<
+  Dictionary["expenses"],
+  "paidByLine" | "newInGroup" | "editInGroup" | "errorShareSumMismatch"
+>;
+
 const initialState: ActionState = { error: null };
 
 export function ExpenseForm({
@@ -31,7 +40,7 @@ export function ExpenseForm({
   expenseId?: string;
   members: MemberOption[];
   defaults?: ExpenseFormDefaults;
-  t: Dictionary["expenses"];
+  t: ExpenseFormLabels;
 }) {
   const isEdit = !!expenseId;
   const action = isEdit
@@ -205,7 +214,7 @@ export function ExpenseForm({
             >
               {Math.abs(customDiff) < 0.005
                 ? t.sumMatches
-                : t.sumDiff(customDiff.toFixed(2), customTotal.toFixed(2), amountNum.toFixed(2))}
+                : `${t.sumDiffLabel}: ${customDiff.toFixed(2)} (${t.sumDiffEnteredLabel} ${customTotal.toFixed(2)} ${t.sumDiffOfLabel} ${amountNum.toFixed(2)})`}
             </p>
           )}
         </div>

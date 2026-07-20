@@ -11,6 +11,10 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type MemberOption = { userId: string; label: string; email: string };
 
+// Excludes the server-only interpolation function (subtitle) — Client
+// Components can't receive functions as props from Server Components.
+export type CsvImportLabels = Omit<Dictionary["csvImport"], "subtitle">;
+
 const NONE = "__none__";
 
 type PreviewRow = {
@@ -40,7 +44,7 @@ export function ExpenseCsvImport({
 }: {
   groupId: string;
   members: MemberOption[];
-  t: Dictionary["csvImport"];
+  t: CsvImportLabels;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -249,7 +253,8 @@ export function ExpenseCsvImport({
       {ready && preview.length > 0 && (
         <Card className="p-4">
           <p className="mb-2 text-sm font-medium text-muted">
-            {t.previewSummary(validCount, preview.length)}
+            {t.previewLabel} ({validCount} {t.ofWord} {preview.length} {t.rowsReadyLabel}){" "}
+            {t.editHint}
           </p>
           <div className="max-h-96 overflow-auto">
             <table className="w-full text-left text-sm">
@@ -309,11 +314,11 @@ export function ExpenseCsvImport({
 
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={handleImport} disabled={pending || validCount === 0}>
-              {pending ? t.importing : t.importButton(validCount)}
+              {pending ? t.importing : `${t.importLabel} ${validCount} ${t.expensesWord}`}
             </Button>
             {result && result.errors.length > 0 && (
               <span className="text-sm text-danger">
-                {t.resultSummary(result.successCount, result.errors.length)}
+                {result.successCount} {t.successWord}, {result.errors.length} {t.withErrorWord}
               </span>
             )}
           </div>
