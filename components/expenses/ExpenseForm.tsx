@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { createExpense } from "@/lib/actions/expenses";
 import type { ActionState } from "@/lib/actions/groups";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +24,9 @@ export function ExpenseForm({
   const [selected, setSelected] = useState<Set<string>>(
     new Set(members.map((m) => m.userId))
   );
+  const [splitMode, setSplitMode] = useState<"equal" | "custom">("equal");
+  const [amount, setAmount] = useState("");
+  const [customShares, setCustomShares] = useState<Record<string, string>>({});
 
   function toggle(userId: string) {
     setSelected((prev) => {
@@ -33,6 +36,16 @@ export function ExpenseForm({
       return next;
     });
   }
+
+  const selectedMembers = members.filter((m) => selected.has(m.userId));
+
+  const customTotal = useMemo(
+    () =>
+      selectedMembers.reduce((sum, m) => sum + (Number(customShares[m.userId]) || 0), 0),
+    [selectedMembers, customShares]
+  );
+  const amountNum = Number(amount) || 0;
+  const customDiff = Math.round((amountNum - customTotal) * 100) / 100;
 
   return (
     <form action={formAction} className="space-y-4">
@@ -44,7 +57,15 @@ export function ExpenseForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1 block text-sm text-muted">Iznos</label>
-          <Input type="number" name="amount" step="0.01" min="0.01" required />
+          <Input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="0.01"
+            required
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
         </div>
         <div>
           <label className="mb-1 block text-sm text-muted">Valuta</label>
@@ -93,6 +114,66 @@ export function ExpenseForm({
           ))}
         </div>
       </div>
+
+      <div>
+        <label className="mb-1 block text-sm text-muted">Način podele</label>
+        <div className="flex gap-4 text-sm">
+          <label className="flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="splitMode"
+              value="equal"
+              checked={splitMode === "equal"}
+              onChange={() => setSplitMode("equal")}
+            />
+            Ravnomerno
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="splitMode"
+              value="custom"
+              checked={splitMode === "custom"}
+              onChange={() => setSplitMode("custom")}
+            />
+            Prilagođeno
+          </label>
+        </div>
+      </div>
+
+      {splitMode === "custom" && (
+        <div className="space-y-2 rounded-lg border border-border p-3">
+          {selectedMembers.length === 0 ? (
+            <p className="text-sm text-muted">Izaberi bar jednog učesnika iznad.</p>
+          ) : (
+            selectedMembers.map((m) => (
+              <div key={m.userId} className="flex items-center justify-between gap-2">
+                <span className="text-sm">{m.label}</span>
+                <Input
+                  type="number"
+                  name={`share_${m.userId}`}
+                  step="0.01"
+                  min="0"
+                  className="w-28"
+                  value={customShares[m.userId] ?? ""}
+                  onChange={(e) =>
+                    setCustomShares((prev) => ({ ...prev, [m.userId]: e.target.value }))
+                  }
+                />
+              </div>
+            ))
+          )}
+          {selectedMembers.length > 0 && (
+            <p
+              className={`text-xs ${Math.abs(customDiff) < 0.005 ? "text-owed" : "text-danger"}`}
+            >
+              {Math.abs(customDiff) < 0.005
+                ? "Zbir se poklapa sa ukupnim iznosom."
+                : `Razlika: ${customDiff.toFixed(2)} (uneto ${customTotal.toFixed(2)} od ${amountNum.toFixed(2)})`}
+            </p>
+          )}
+        </div>
+      )}
 
       {state.error && <p className="text-sm text-danger">{state.error}</p>}
 
