@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.splitwiserchoco.app",
+      "sha256_cert_fingerprints": [
+        "EA:FE:EA:0E:AC:3E:0D:B4:E7:E1:F0:AE:47:AA:A4:1A:8D:01:33:54:90:DC:47:99:51:DF:91:AE:19:60:1B:63"
+      ]
+    }
+  }
+]
